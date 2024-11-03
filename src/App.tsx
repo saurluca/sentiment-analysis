@@ -1,4 +1,5 @@
 import {useState} from "react";
+import Tooltip from "./components/Tooltip";
 
 
 type Sentiment = "P+" | "P" | "N" | "N+" | "NEU";
@@ -11,6 +12,14 @@ const sentimentColors: Record<Sentiment, string> = {
 }
 
 const useTestMode = true;
+
+const sentimentDetails: Record<Sentiment, { text: string; icon: string; color: string }> = {
+    "P+": { text: "Very Positive", icon: "😍", color: "text-green-600" },
+    "P": { text: "Positive", icon: "😌", color: "text-green-500" },
+    "NEU": { text: "Neutral", icon: "😑", color: "text-gray-500" },
+    "N": { text: "Negative", icon: "😣", color: "text-red-500" },
+    "N+": { text: "Very Negative", icon: "😫", color: "text-red-600" },
+};
 
 function App() {
     const [text, setText] = useState("")
@@ -43,6 +52,7 @@ function App() {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 setSentiment(getRandomSentiment());
             } else {
+                console.log("sending api request")
                 const response = await fetch("https://api.meaningcloud.com/sentiment-2.1", requestOptions)
                 const data = await response.json();
                 console.log("data", data);
@@ -61,14 +71,32 @@ function App() {
     return (
         <div className="h-dvh w-dvh flex items-center justify-center bg-slate-100">
             <div className={`max-w-xl w-full p-6 bg-white rounded-lg  ${isLoading ? '' : sentimentColors[sentiment]}`}>
-                <h1 className="text-4xl font-bold mb-2">Sentiment Analysis</h1>
+                <div className="flex flex-row items-center justify-between mb-4">
+                    <h1 className="text-2xl font-bold">Sentiment Analysis</h1>
 
+                    <Tooltip content={
+                        <div className="text-gray-600">
+                            <p className="font-medium mb-2">How Sentiment Analysis Works</p>
+                            <p className="mb-2">Sentiment analysis uses AI to determine the emotional tone of text:</p>
+                            <ul className="list-disc ml-4 mt-2 space-y-1">
+                                <li>Very Positive (P+): Extremely favorable</li>
+                                <li>Positive (P): Generally favorable</li>
+                                <li>Neutral (NEU): Neither positive nor negative</li>
+                                <li>Negative (N): Generally unfavorable</li>
+                                <li>Very Negative (N+): Extremely unfavorable</li>
+                            </ul>
+                        </div>
+                    } />
+                </div>
 
-                {sentiment === "NEU" && <p className="text-gray-500">The sentiment is not determined.</p>}
-                {sentiment === "P+" && <p className="text-green-500">The sentiment is positive.</p>}
-                {sentiment === "P" && <p className="text-green-500">The sentiment is positive.</p>}
-                {sentiment === "N" && <p className="text-red-500">The sentiment is negative.</p>}
-                {sentiment === "N+" && <p className="text-red-500">The sentiment is negative.</p>}
+                {sentiment && (
+                    <div className={`flex items-center gap-2 ${sentimentDetails[sentiment].color}`}>
+                        <span className="text-2xl">{sentimentDetails[sentiment].icon}</span>
+                        <p className="text-lg font-medium">
+                            The sentiment is {sentimentDetails[sentiment].text.toLowerCase()}.
+                        </p>
+                    </div>
+                )}
 
                 <textarea
                     rows={14}
@@ -79,7 +107,7 @@ function App() {
                 />
 
                 <button
-                    className="w-full mt-4 bg-blue-500 text-white text-lg font-bold py-2 px-4  rounded-md hover:bg-blue-700 duration-200 transition-all"
+                    className="w-full mt-4 bg-blue-500 text-white text-lg font-bold py-2 px-4 rounded-md hover:bg-blue-700 focus:bg-blue-600 focus:outline-none active:bg-blue-500 duration-200 transition-all"
                     onClick={checkSentiment}
                 >
                     {isLoading ? "Loading..." : "Check"}
