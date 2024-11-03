@@ -25,7 +25,7 @@ const useTestMode = true;
 
 function App() {
     const [text, setText] = useState("")
-    const [sentiment, setSentiment] = useState<Sentiment>("NEU");
+    const [sentiment, setSentiment] = useState<Sentiment | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const apiKey = import.meta.env.VITE_MEANINGCLOUD_API_KEY
 
@@ -51,7 +51,7 @@ function App() {
             if (useTestMode) {
                 console.log("Using test mode");
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 800));
                 setSentiment(getRandomSentiment());
             } else {
                 console.log("sending api request")
@@ -78,10 +78,10 @@ function App() {
 
     return (
         <div className="h-dvh w-dvh flex items-center justify-center bg-slate-100">
-            <div className={`max-w-xl w-full p-6 bg-white rounded-lg  ${isLoading ? '' : sentimentColors[sentiment]}`}>
+            <div className={`max-w-xl w-full p-6 bg-white rounded-lg ${isLoading || sentiment === null ? '' : sentimentColors[sentiment]}`}>
                 <div className="flex flex-row items-center justify-between mb-2">
                     <div className="flex flex-col">
-                        <h1 className="text-2xl font-bold">Sentiment Analysis</h1>
+                        <h1 className="text-2xl font-bold">Sentiment Analyser</h1>
                         {useTestMode && (
                             <span className="text-xs text-gray-500 mt-1">
                                 Test Mode: Using random sentiments
@@ -90,7 +90,6 @@ function App() {
                     </div>
                     <Tooltip content={
                         <div className="text-gray-600">
-                            <p className="font-medium mb-2">How Sentiment Analysis Works</p>
                             <p className="mb-2">Using the MeaningCloud API, this tool analyzes text to determine its primary emotional tone:</p>
                             <ul className="list-disc ml-4 mt-2 space-y-1">
                                 <li>Very Positive (P+): Extremely favorable</li>
@@ -103,7 +102,7 @@ function App() {
                     } />
                 </div>
 
-                {sentiment && (
+                {sentiment !== null && !isLoading && (
                     <div className={`flex items-center gap-2 ${sentimentDetails[sentiment].color}`}>
                         <span className="text-2xl">{sentimentDetails[sentiment].icon}</span>
                         <p className="text-lg font-medium">
