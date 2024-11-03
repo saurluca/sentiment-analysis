@@ -27,7 +27,7 @@ function App() {
     const [text, setText] = useState("")
     const [sentiment, setSentiment] = useState<Sentiment | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const apiKey = import.meta.env.VITE_MEANINGCLOUD_API_KEY
+    const apiKey = import.meta.env.VITE_MEANINGCLOUD_API_KEY ?? '';
 
     function getRandomSentiment(): Sentiment {
         const sentiments: Sentiment[] = ["P+", "P", "NEU", "N", "N+"];
@@ -43,7 +43,7 @@ function App() {
         const requestOptions = {
             method: 'POST',
             body: formdata,
-            redirect: 'follow'
+            redirect: 'follow' as RequestRedirect
         }
 
         try {
