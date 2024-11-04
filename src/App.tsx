@@ -1,19 +1,18 @@
-import {useState} from "react";
+import { useState } from "react";
 import Tooltip from "./components/Tooltip";
+import { Sentiment, SentimentColors, SentimentDetails } from "./types/sentiment";
 
-
-type Sentiment = "P+" | "P" | "N" | "N+" | "NEU" | "NONE";
-
-const sentimentColors: Record<Sentiment, string> = {
+// Constants
+const sentimentColors: SentimentColors = {
     "P+": "shadow-green-600 shadow-xl",
     "P": "shadow-green-500 shadow-lg",
     "NEU": "shadow-gray-500 shadow-lg",
     "N": "shadow-red-500 shadow-lg",
     "N+": "shadow-red-600 shadow-xl",
     "NONE": "shadow-gray-400 shadow-lg",
-}
+};
 
-const sentimentDetails: Record<Sentiment, { text: string; icon: string; color: string }> = {
+const sentimentDetails: SentimentDetails = {
     "P+": { text: "Very Positive", icon: "😍", color: "text-green-600" },
     "P": { text: "Positive", icon: "😌", color: "text-green-500" },
     "NEU": { text: "Neutral", icon: "😑", color: "text-gray-500" },
@@ -22,52 +21,51 @@ const sentimentDetails: Record<Sentiment, { text: string; icon: string; color: s
     "NONE": { text: "Unable to determine", icon: "❓", color: "text-gray-400" },
 };
 
+// Service functions
+const analyzeSentiment = async (text: string, apiKey: string): Promise<Sentiment> => {
+    const formdata = new FormData();
+    formdata.append("key", apiKey);
+    formdata.append("txt", text);
+    formdata.append("lang", "en");
+
+    const response = await fetch("https://api.meaningcloud.com/sentiment-2.1", {
+        method: 'POST',
+        body: formdata,
+        redirect: 'follow'
+    });
+    
+    const data = await response.json();
+    return data.score_tag || "NONE";
+};
+
+const getRandomSentiment = (): Sentiment => {
+    const sentiments: Sentiment[] = ["P+", "P", "NEU", "N", "N+"];
+    return sentiments[Math.floor(Math.random() * sentiments.length)];
+};
+
 function App() {
     const [text, setText] = useState("")
     const [sentiment, setSentiment] = useState<Sentiment | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const apiKey = import.meta.env.VITE_MEANINGCLOUD_API_KEY ?? '';
-    const useTestMode = import.meta.env.VITE_USE_TEST_MODE !== 'false';  // Default to true if not set
-
-    function getRandomSentiment(): Sentiment {
-        const sentiments: Sentiment[] = ["P+", "P", "NEU", "N", "N+"];
-        return sentiments[Math.floor(Math.random() * sentiments.length)];
-    }
+    const useTestMode = import.meta.env.VITE_USE_TEST_MODE !== 'false';
 
     async function checkSentiment(): Promise<void> {
-        const formdata = new FormData();
-        formdata.append("key", apiKey);
-        formdata.append("txt", text);
-        formdata.append("lang", "en");
-
-        const requestOptions = {
-            method: 'POST',
-            body: formdata,
-            redirect: 'follow' as RequestRedirect
-        }
-
         try {
             setIsLoading(true);
             if (useTestMode) {
+                // wait for 800ms to simulate loading
                 await new Promise(resolve => setTimeout(resolve, 800));
                 setSentiment(getRandomSentiment());
             } else {
-                const response = await fetch("https://api.meaningcloud.com/sentiment-2.1", requestOptions)
-                const data = await response.json();
-                
-                if (!data.score_tag || data.score_tag === "NONE") {
-                    setSentiment("NONE");
-                    console.log("No sentiment detected");
-                } else {
-                    setSentiment(data.score_tag);
-                    console.log("Sentiment:", data.score_tag);
-                }
+                const result = await analyzeSentiment(text, apiKey);
+                setSentiment(result);
             }
-            setIsLoading(false);
         } catch (error) {
-            setIsLoading(false);
             console.error("Error:", error);
             setSentiment("NONE");
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -97,17 +95,19 @@ function App() {
                     } />
                 </div>
 
-                {sentiment !== null && !isLoading && (
-                    <div className={`flex items-center gap-2 ${sentimentDetails[sentiment].color}`}>
-                        <span className="text-2xl">{sentimentDetails[sentiment].icon}</span>
-                        <p className="text-lg font-medium">
-                            {sentiment === "NONE" 
-                                ? "Unable to determine the sentiment. Please try different text."
-                                : `The sentiment is ${sentimentDetails[sentiment].text.toLowerCase()}.`
-                            }
-                        </p>
-                    </div>
-                )}
+                <div className="min-h-[2rem] mb-2">
+                    {sentiment !== null && !isLoading && (
+                        <div className={`flex items-center gap-2 ${sentimentDetails[sentiment].color}`}>
+                            <span className="text-2xl">{sentimentDetails[sentiment].icon}</span>
+                            <p className="text-lg font-medium">
+                                {sentiment === "NONE" 
+                                    ? "Unable to determine the sentiment. Please try different text."
+                                    : `The sentiment is ${sentimentDetails[sentiment].text.toLowerCase()}.`
+                                }
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 <textarea
                     rows={14}
@@ -123,10 +123,9 @@ function App() {
                 >
                     {isLoading ? "Loading..." : "Check"}
                 </button>
-
             </div>
         </div>
-    )
+    );
 }
 
-export default App
+export default App;
