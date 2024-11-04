@@ -3,6 +3,7 @@ import Tooltip from "./components/Tooltip";
 
 
 type Sentiment = "P+" | "P" | "N" | "N+" | "NEU" | "NONE";
+
 const sentimentColors: Record<Sentiment, string> = {
     "P+": "shadow-green-600 shadow-xl",
     "P": "shadow-green-500 shadow-lg",
@@ -21,13 +22,12 @@ const sentimentDetails: Record<Sentiment, { text: string; icon: string; color: s
     "NONE": { text: "Unable to determine", icon: "❓", color: "text-gray-400" },
 };
 
-const useTestMode = true;
-
 function App() {
     const [text, setText] = useState("")
     const [sentiment, setSentiment] = useState<Sentiment | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const apiKey = import.meta.env.VITE_MEANINGCLOUD_API_KEY ?? '';
+    const useTestMode = import.meta.env.VITE_USE_TEST_MODE !== 'false';  // Default to true if not set
 
     function getRandomSentiment(): Sentiment {
         const sentiments: Sentiment[] = ["P+", "P", "NEU", "N", "N+"];
@@ -49,15 +49,11 @@ function App() {
         try {
             setIsLoading(true);
             if (useTestMode) {
-                console.log("Using test mode");
-
                 await new Promise(resolve => setTimeout(resolve, 800));
                 setSentiment(getRandomSentiment());
             } else {
-                console.log("sending api request")
                 const response = await fetch("https://api.meaningcloud.com/sentiment-2.1", requestOptions)
                 const data = await response.json();
-                console.log("data", data);
                 
                 if (!data.score_tag || data.score_tag === "NONE") {
                     setSentiment("NONE");
@@ -67,7 +63,6 @@ function App() {
                     console.log("Sentiment:", data.score_tag);
                 }
             }
-
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
